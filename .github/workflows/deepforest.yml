@@ -1,7 +1,7 @@
 name: DeepForest Predict
 
 on:
-  workflow_dispatch:  # 手動実行
+  workflow_dispatch:
 
 jobs:
   predict:
@@ -14,16 +14,18 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      - name: Clone deep-forest repo
+        run: git clone https://github.com/leopiney/deep-forest.git
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.10'
 
       - name: Install dependencies
         run: |
           pip install --upgrade pip
           pip install pandas numpy scikit-learn google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2
-          pip install git+https://github.com/leopiney/deep-forest.git
 
       - name: Run script
         run: python run_deepforest.py
