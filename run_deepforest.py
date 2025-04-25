@@ -1,33 +1,65 @@
 import pandas as pd
 import numpy as np
+import json
+import io
+import os
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 from deepforest import CascadeForestRegressor
-import os
-import gdown
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
 
-# Google DriveのファイルID（共有リンクから取得）
-FILE_ID = os.getenv("DRIVE_FILE_ID")
-OUTPUT_CSV = "housoukikan.csv"
+# ========================
+# Google DriveからCSV取得
+# ========================
 
-# ファイルのダウンロード
-gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", OUTPUT_CSV, quiet=False)
+# 環境変数からサービスアカウントキーを取得
+google_credentials_json = os.getenv("GOOGLE_SERVICE_ACCOUNT")
+if not google_credentials_json:
+    raise ValueError("GOOGLE_SERVICE_ACCOUNT が設定されていません。")
 
-# データの読み込み
-df = pd.read_csv(OUTPUT_CSV)
+json_data = json.loads(google_credentials_json)
+credentials = service_account.Credentials.from_service_account_info(json_data)
+drive_service = build("drive", "v3", credentials=credentials)
 
-# 特徴量と目的変数に分割
+# ファイル名からID取得
+def get_file_id(file_name):
+    results = drive_service.files().list(
+        q=f"name = '{file_name}' and trashed = false",
+        fields="files(id, name)",
+        spaces='drive'
+    ).execute()
+    files = results.get("files", [])
+    return files[0]["id"] if files else None
+
+file_name = "housoukikan.csv"
+file_id = get_file_id(file_name)
+
+if not file_id:
+    raise FileNotFoundError(f"{file_name} がGoogle Driveに存在しません。")
+
+# ファイル取得
+request = drive_service.files().get_media(fileId=file_id)
+fh = io.BytesIO()
+downloader = MediaIoBaseDownload(fh, request)
+done = False
+while not done:
+    status, done = downloader.next_chunk()
+
+fh.seek(0)
+df = pd.read_csv(fh)
+print("CSV読み込み成功:", df.columns.tolist())
+
+#deepforestで処理
 X = df.drop(columns=['BD枚数'])  # 必要に応じて修正
 y = df['BD枚数']
 
-# データ分割
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# モデル構築と学習
 model = CascadeForestRegressor(random_state=42, n_jobs=-1)
 model.fit(X_train.values, y_train.values)
 
-# 予測と評価
 y_pred = model.predict(X_test.values)
 rmse = np.sqrt(mean_squared_error(y_test, y_pred))
 r2 = r2_score(y_test, y_pred)
