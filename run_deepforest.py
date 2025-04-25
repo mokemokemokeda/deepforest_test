@@ -9,10 +9,11 @@ from deepforest import CascadeForestRegressor
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
+import sys
+import os
 
-# ========================
-# Google DriveからCSV取得
-# ========================
+# deep-forest を clone していれば使えるようにパス追加
+sys.path.append(os.path.join(os.getcwd(), "deep-forest"))
 
 # 環境変数からサービスアカウントキーを取得
 google_credentials_json = os.getenv("GOOGLE_SERVICE_ACCOUNT")
