@@ -1,9 +1,5 @@
-git+https://github.com/LAMDA-NJU/GCForest.git
-scikit-learn
 pandas
-matplotlib
-shap
-seaborn
-google-api-python-client
-google-auth
-google-auth-oauthlib
+scikit-learn
+numpy
+gdown
+git+https://github.com/leopiney/deep-forest.git
