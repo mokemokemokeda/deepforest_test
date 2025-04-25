@@ -2,4 +2,5 @@ pandas
 scikit-learn
 numpy
 gdown
+deepforest
 git+https://github.com/leopiney/deep-forest.git
